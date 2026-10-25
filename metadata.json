@@ -1,0 +1,8 @@
+{
+  "name": "SchoolSync - Attendance Management",
+  "description": "Professional, offline-first school administration and QR attendance management system for principals and teachers.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

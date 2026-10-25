@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile mapping Firebase Auth UID to authorized school workspace",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "Account email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "schoolId": { "type": "string", "description": "Associated school workspace identifier" },
+        "role": { "type": "string", "enum": ["owner", "headmaster", "teacher"] },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["uid", "email", "schoolId", "role"]
+    },
+    "School": {
+      "title": "School",
+      "description": "School profile and configuration settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "School workspace ID" },
+        "ownerUid": { "type": "string", "description": "Firebase Auth UID of the school owner" },
+        "name": { "type": "string", "description": "Official name of the school", "maxLength": 150 },
+        "principalName": { "type": "string", "description": "Headmaster or Principal name", "maxLength": 100 },
+        "academicYear": { "type": "string", "description": "Academic school year, e.g. 2026-2027" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "ownerUid", "name"]
+    },
+    "ClassGrade": {
+      "title": "ClassGrade",
+      "description": "School class and section record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Class identifier" },
+        "schoolId": { "type": "string", "description": "Parent school ID" },
+        "name": { "type": "string", "description": "Class name, e.g. Grade 10", "maxLength": 100 },
+        "section": { "type": "string", "description": "Section identifier" },
+        "headmasterName": { "type": "string", "description": "Assigned headmaster" },
+        "academicYear": { "type": "string", "description": "Academic year" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "schoolId", "name"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Enrolled student record with unique QR credentials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Stable unique student UUID" },
+        "schoolId": { "type": "string", "description": "Parent school ID" },
+        "classId": { "type": "string", "description": "Enrolled class ID" },
+        "rollNumber": { "type": "string", "description": "Roll number with leading zeros preserved", "maxLength": 50 },
+        "fullName": { "type": "string", "description": "Student full legal name", "maxLength": 150 },
+        "guardianName": { "type": "string", "description": "Father or guardian name", "maxLength": 150 },
+        "address": { "type": "string", "description": "Residential address", "maxLength": 300 },
+        "photoUrl": { "type": "string", "description": "Student photo data URL or image storage URL" },
+        "qrCodeToken": { "type": "string", "description": "QR credential token" },
+        "activeCredentialId": { "type": "string", "description": "Active credential ID" },
+        "enrollmentStatus": { "type": "string", "enum": ["active", "inactive", "transferred"] },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "schoolId", "classId", "rollNumber", "fullName", "qrCodeToken"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Daily student attendance log record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Attendance record ID (${studentId}_${date})" },
+        "schoolId": { "type": "string", "description": "Parent school ID" },
+        "studentId": { "type": "string", "description": "Student UUID" },
+        "studentRollNumber": { "type": "string", "description": "Student roll number" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "classId": { "type": "string", "description": "Class UUID" },
+        "date": { "type": "string", "description": "Date format YYYY-MM-DD" },
+        "status": { "type": "string", "enum": ["present", "absent", "sick_leave", "approved_leave"] },
+        "method": { "type": "string", "description": "qr_scan or manual_entry" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of marking" }
+      },
+      "required": ["id", "schoolId", "studentId", "classId", "date", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile with authorized school workspace"
+    },
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/School" },
+      "description": "School workspace details and ownership"
+    },
+    "/schools/{schoolId}/classes/{classId}": {
+      "schema": { "$ref": "#/entities/ClassGrade" },
+      "description": "Class definitions within a school"
+    },
+    "/schools/{schoolId}/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Student roster within a school"
+    },
+    "/schools/{schoolId}/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Attendance records within a school"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSchoolOwner(schoolId) {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/schools/$(schoolId)) &&
+        get(/databases/$(database)/documents/schools/$(schoolId)).data.ownerUid == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && 
+        request.resource.data.uid == userId &&
+        request.resource.data.email is string;
+      allow update: if isOwner(userId) && 
+        request.resource.data.uid == userId;
+      allow delete: if false;
+    }
+
+    // Schools Collection
+    match /schools/{schoolId} {
+      allow read: if isSignedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.id == schoolId
+      );
+
+      allow create: if isSignedIn() &&
+        isValidId(schoolId) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 150;
+
+      allow update: if isSignedIn() &&
+        resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 150;
+
+      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+
+      // Classes Subcollection
+      match /classes/{classId} {
+        allow read: if isSchoolOwner(schoolId);
+        allow create, update: if isSchoolOwner(schoolId) &&
+          isValidId(classId) &&
+          request.resource.data.name is string &&
+          request.resource.data.name.size() > 0 &&
+          request.resource.data.name.size() <= 100;
+        allow delete: if isSchoolOwner(schoolId);
+      }
+
+      // Students Subcollection
+      match /students/{studentId} {
+        allow read: if isSchoolOwner(schoolId);
+        allow create, update: if isSchoolOwner(schoolId) &&
+          isValidId(studentId) &&
+          request.resource.data.fullName is string &&
+          request.resource.data.fullName.size() > 0 &&
+          request.resource.data.fullName.size() <= 150 &&
+          request.resource.data.rollNumber is string &&
+          request.resource.data.rollNumber.size() <= 50;
+        allow delete: if isSchoolOwner(schoolId);
+      }
+
+      // Attendance Subcollection
+      match /attendance/{attendanceId} {
+        allow read: if isSchoolOwner(schoolId);
+        allow create, update: if isSchoolOwner(schoolId) &&
+          isValidId(attendanceId) &&
+          request.resource.data.date is string &&
+          request.resource.data.status in ['present', 'absent', 'sick_leave', 'approved_leave'];
+        allow delete: if isSchoolOwner(schoolId);
+      }
+    }
+  }
+}
